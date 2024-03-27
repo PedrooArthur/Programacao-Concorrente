@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h> 
 #include <pthread.h>
-#include <time.h>
+
 
 int *create_vector(int tam);
 int verify_vector(int *vector, int *vector_quad, int tam);
@@ -20,14 +20,14 @@ void *Calcula_Quad (void *arg) {
   int *vector = args.vector;
 
 
-   int pos = args.idThread;
-   int lim = ((pos +1)* args.passo -1);
-   if(args.idThread +1 != args.nThreads){ 
+   int pos = args.idThread;  
+   int lim = ((pos +1)* args.passo -1);  // aqui temos que fazer algumas manipulações pois, primeiramente, o valor de IdThread começa em 0 e não em 1. Tal lim é o limitante do for, é aonde cada Thread deverá parar
+   if(args.idThread +1 != args.nThreads){ // verificamos se a já é última Thread. Caso não executa o if.
     for(i = lim - (args.passo -1) ; i < lim+1 ; i++){
         vector[i] = vector[i]*vector[i];
      } 
    }
-   else{ 
+   else{                                   // Dado que é a última Thread, ela ficará com o restante do que não ficou pras outras Threads, no caso aonde a divisão do vetor não foi inteira. 
     for(i = lim - (args.passo -1) ; i < args.tam ; i++){
         vector[i] = vector[i]*vector[i];
      }  
@@ -43,13 +43,18 @@ int main(int argc, char *argv[]) {
   int *vector;
   int *vector_quad;
   
-  NTHREADS = atoi(argv[1]);
+  if(atoi(argv[1]) < atoi(argv[2])){  
+   NTHREADS = atoi(argv[1]);  // Aqui queremos verificar se o número de Threads é menor ou igual o número de elementos no vetor, para sabermos se precisamos criar todas as Threads pedidas 
+  }                           // evitamos assim criar Threads sem uso
+  else{
+     NTHREADS = atoi(argv[2]);   // Neste condicional estamos tratando o caso aonde temos um número de Threads maior que o número de elementos no vetor
+  }    
   pthread_t tid_sistema[NTHREADS]; //identificadores das threads no sistema
   t_Args *args; //receberá os argumentos para a thread
   
   tam = atoi(argv[2]);
-  vector = create_vector(tam);
-  vector_quad = quad_vector(vector, tam);
+  vector = create_vector(tam); // foi criada uma função para inicializar um vetor com base nos dados preenchidos pelo usuário
+  vector_quad = quad_vector(vector, tam);  // função utilizada para calcular previamente o valor esperado do quadrado do vetor, porém de forma sequencial. Utilizaremos tal valor para conferir se a respota gerada pelas Threads foi a correta.
   if( vector == NULL)
     return 1;
    
@@ -59,7 +64,7 @@ int main(int argc, char *argv[]) {
   }
   printf("\n");
   
-  passo =  tam % NTHREADS;
+  passo =  tam % NTHREADS;  // variável para conseguirmos calcular o pedaçõ do vetor separado para cada Thread
 
   for(int i=0; i<NTHREADS; i++) {
     printf("--Aloca e preenche argumentos para thread %d\n", i);
@@ -86,7 +91,7 @@ int main(int argc, char *argv[]) {
     }
   }
   
-  verify_vector(vector,vector_quad, tam);
+  verify_vector(vector,vector_quad, tam); // função de verificação utilizada para sabermos se as Threads fizeram um trabalho correto. Para tal verificação utilizamos o resultado calculado previamente pela função quad_vector, função sequancial, e verificamos o mesmo com a resposta gerada pelas Thread, com a programação concorrente.
   
   printf("O quadrado do vetor original é : ");
   for(int i = 0; i<tam; i++){
@@ -108,13 +113,13 @@ int *create_vector(int tam){
     if( vector == NULL){
      return NULL;
     }
-    srand((unsigned) time(NULL));
-    for(int i= 0; i <tam; i++){
     
-        vector[i] = (rand())%100;
+    printf("Entre com os elementos do seu vetor de tamanho %d : ", tam);
+    
+    for(int i= 0;i <tam ; i++){
+       scanf("%d", &vector[i]);
     
     }
-    
     return vector;
 }
 
